@@ -1,9 +1,8 @@
 import context from "./scripts/context.js";
 import * as Utils from "./scripts/utils.js";
 
-/* Start met je naam in te vullen
 // HAMZIC BRUNO
-*/
+
 let width = context.canvas.width;
 let height = context.canvas.height;
 
@@ -12,12 +11,11 @@ let score = 0;
 let gameOver = false;
 let frameCount = 0;
 
-// Apple
+// Apples
+let apples = [];
+let amountOfApples = 1;
 let appleSize = 20;
 let stemWidth = 10;
-let appleX = Utils.randomNumber(appleSize, width - appleSize);
-let appleY = 100;
-let appelSpeed = Math.round(Utils.randomNumber(2, 5));
 
 // Basket
 let basketWidth = 100;
@@ -25,26 +23,43 @@ let basketHeight = 75;
 let heightOffset = 150;
 let basketXPosition = width / 2;
 
-// Extra variabelen voor stap 10
-/*
-let amountOfApples = 1;
-let applesX = [];
-let applesY = [];
-let applesSize = [];
-*/
+let basketHitboxPos = {
+	leftX: basketXPosition - 10,
+	middleX: basketXPosition + basketWidth / 2,
+	rightX: basketXPosition + basketWidth + 10,
+	hitY: height - heightOffset,
+};
 
 setup();
 draw();
 
 window.onkeydown = function (eventData) {
-    if (eventData.key == "Enter") {
-        resetGame();
-    } else {
-        moveBasket(eventData);
-    }
+	if (eventData.key == "Enter") {
+		resetGame();
+	} else {
+		moveBasket(eventData);
+	}
 };
 
-function setup() {}
+function setup() {
+	// Initial apple list
+	for (let i = 0; i < amountOfApples; i++) {
+		let apple = {
+			x: Utils.randomNumber(appleSize, width - appleSize),
+			y: 100,
+			speed: Math.round(Utils.randomNumber(2, 5)),
+			iterator: 0,
+		};
+
+		apple.appleHitboxPos = {
+			leftX: apple.x - appleSize * 1.5,
+			middleX: apple.x,
+			rightX: apple.x + appleSize * 1.5,
+			hitY: apple.y + apple.speed * 0 + appleSize,
+		};
+		apples.push(apple);
+	}
+}
 
 function draw() {
 	context.clearRect(0, 0, width, height);
@@ -55,36 +70,32 @@ function draw() {
 	context.fillRect(0, 0, width, height);
 	context.closePath();
 
-	drawApple(appleX, appleY + appelSpeed * frameCount);
+	drawApple();
 	drawBasket(basketXPosition);
 
-	let appleHitKeyPos = {
-		leftX: appleX - appleSize * 1.5,
-		middleX: appleX,
-		rightX: appleX + appleSize * 1.5,
-		y: appleY + appelSpeed * frameCount + appleSize,
-	};
-	let basketHitKeyPos = {
-		leftX: basketXPosition - 10,
-		middleX: basketXPosition + basketWidth / 2,
-		rightX: basketXPosition + basketWidth + 10,
-		y: height - heightOffset,
-	};
+	apples.forEach((apple) => {
+		if (
+			((apple.appleHitboxPos.leftX <= basketHitboxPos.rightX && apple.appleHitboxPos.leftX >= basketHitboxPos.leftX) ||
+			(apple.appleHitboxPos.rightX >= basketHitboxPos.leftX && apple.appleHitboxPos.rightX <= basketHitboxPos.rightX)) &&
+			(apple.appleHitboxPos.hitY <= basketHitboxPos.hitY + 1 && apple.appleHitboxPos.hitY >= basketHitboxPos.hitY - 1)
+		) {
+			console.log("Caught");
+			score++;
+			(score % 5) ? null : lives++;
 
-	if (
-		((appleHitKeyPos.leftX <= basketHitKeyPos.rightX && appleHitKeyPos.leftX >= basketHitKeyPos.leftX) || (appleHitKeyPos.rightX >= basketHitKeyPos.leftX && appleHitKeyPos.rightX <= basketHitKeyPos.rightX)) &&
-		appleHitKeyPos.y == basketHitKeyPos.y
-	) {
-		console.log("Caught");
-		score++;
-		frameCount = 0;
-		resetApple();
-	} else if (appleHitKeyPos.y >= height - basketHeight) {
-		console.log("Hit");
-		lives--;
-		frameCount = 0;
-		resetApple();
-	}
+			resetApple(apple);
+			amountOfApples++;
+			createApple();
+		} else if (apple.appleHitboxPos.hitY >= height - basketHeight) {
+			console.log("Dropped");
+			lives--;
+
+			resetApple(apple);
+			amountOfApples++;
+			createApple();
+		}
+		apple.appleHitboxPos.hitY = apple.y + apple.speed * apple.iterator + appleSize;
+	});
 
 	if (lives != 0) {
 		drawText();
@@ -94,6 +105,24 @@ function draw() {
 		gameOver = true;
 		drawText("GAME OVER");
 	}
+}
+
+function createApple() {
+	let apple = {
+		x: Utils.randomNumber(appleSize, width - appleSize),
+		y: 100,
+		speed: Math.round(Utils.randomNumber(2, 5)),
+		iterator: 0,
+	};
+
+	apple.appleHitboxPos = {
+		leftX: apple.x - appleSize * 1.5,
+		middleX: apple.x,
+		rightX: apple.x + appleSize * 1.5,
+		hitY: apple.y + apple.speed * 0 + appleSize,
+	};
+
+	apples.push(apple);
 }
 
 function drawText(gameEndText) {
@@ -109,27 +138,45 @@ function drawText(gameEndText) {
 	}
 }
 
-function drawApple(x, y) {
-	context.beginPath();
+function drawApple() {
+	apples.forEach((apple) => {
+		context.beginPath();
 
-	context.lineWidth = stemWidth;
-	context.strokeStyle = "green";
-	Utils.drawLine(x, y, x, y - 30);
+		context.lineWidth = stemWidth;
+		context.strokeStyle = "green";
+		apple.iterator++;
+		Utils.drawLine(apple.x, apple.y + apple.speed * apple.iterator, apple.x, apple.y + apple.speed * apple.iterator - 30);
 
-	context.fillStyle = "red";
-	Utils.fillCircle(x - 10, y, appleSize);
-	Utils.fillCircle(x + 10, y, appleSize);
+		context.fillStyle = "red";
+		Utils.fillCircle(apple.x - 10, apple.y + apple.speed * apple.iterator, appleSize);
+		Utils.fillCircle(apple.x + 10, apple.y + apple.speed * apple.iterator, appleSize);
 
-	context.closePath();
+		context.closePath();
+	});
 }
 
-function resetApple() {
-	appleX = Utils.randomNumber(appleSize, width - appleSize);
-	appleY = 100;
-	appelSpeed = Math.round(Utils.randomNumber(2, 5));
+function resetApple(givenApple) {
+	givenApple.x = Utils.randomNumber(appleSize, width - appleSize);
+	givenApple.y = 100;
+	givenApple.speed = Math.round(Utils.randomNumber(2, 5));
+	givenApple.iterator = 0;
+
+	givenApple.appleHitboxPos = {
+		leftX: givenApple.x - appleSize * 1.5,
+		middleX: givenApple.x,
+		rightX: givenApple.x + appleSize * 1.5,
+		hitY: givenApple.y + givenApple.speed * 0 + appleSize,
+	};
 }
 
 function drawBasket(x) {
+	basketHitboxPos = {
+		leftX: basketXPosition - 10,
+		middleX: basketXPosition + basketWidth / 2,
+		rightX: basketXPosition + basketWidth + 10,
+		hitY: height - heightOffset,
+	};
+
 	context.beginPath();
 
 	// The "box"
@@ -155,10 +202,5 @@ function moveBasket(eventData) {
 }
 
 function resetGame() {
-    lives = 3;
-    score = 0;
-    gameOver = false;
-    frameCount = 0;
-    basketXPosition = width / 2;
-    resetApple();
+	location.reload();
 }
