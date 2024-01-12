@@ -37,7 +37,11 @@ setup();
 draw();
 
 window.onkeydown = function (eventData) {
-	moveBasket(eventData);
+    if (eventData.key == "Enter") {
+        resetGame();
+    } else {
+        moveBasket(eventData);
+    }
 };
 
 function setup() {}
@@ -72,30 +76,37 @@ function draw() {
 		appleHitKeyPos.y == basketHitKeyPos.y
 	) {
 		console.log("Caught");
-        score++;
-        frameCount = 0;
-        resetApple();
+		score++;
+		frameCount = 0;
+		resetApple();
 	} else if (appleHitKeyPos.y >= height - basketHeight) {
 		console.log("Hit");
-        lives--;
-        frameCount = 0;
-        resetApple();
+		lives--;
+		frameCount = 0;
+		resetApple();
 	}
 
-	drawText();
-
 	if (lives != 0) {
+		drawText();
 		frameCount++;
 		requestAnimationFrame(draw);
+	} else {
+		gameOver = true;
+		drawText("GAME OVER");
 	}
 }
 
-function drawText() {
+function drawText(gameEndText) {
 	context.beginPath();
 	context.fillStyle = "black";
 	context.font = "30px Arial";
 	context.fillText("Lives: " + lives, 10, 50);
 	context.fillText("score: " + score, 10, 100);
+	if (gameEndText == "GAME OVER") {
+		context.fillStyle = "Red";
+		context.font = "50px Arial";
+		context.fillText(gameEndText, width / 2 - 100, height / 2);
+	}
 }
 
 function drawApple(x, y) {
@@ -113,9 +124,9 @@ function drawApple(x, y) {
 }
 
 function resetApple() {
-    appleX = Utils.randomNumber(appleSize, width - appleSize);
-    appleY = 100;
-    appelSpeed = Math.round(Utils.randomNumber(2, 5));
+	appleX = Utils.randomNumber(appleSize, width - appleSize);
+	appleY = 100;
+	appelSpeed = Math.round(Utils.randomNumber(2, 5));
 }
 
 function drawBasket(x) {
@@ -143,36 +154,11 @@ function moveBasket(eventData) {
 	}
 }
 
-/** Debug help:
- * 
-    let speedArr = [];
-    for (let i = 0; i < 100; i++) {
-        speedArr.push(Math.round(Utils.randomNumber(1,5)));
-    }
-    console.table(speedArr);
-
-    // Draws "points" showing where the "hit" areas are
-    context.beginPath();
-    context.fillStyle = "black";
-    Utils.fillCircle(basketXPosition - 10, height - heightOffset, 3);                               // Left
-    Utils.fillCircle(basketXPosition + basketWidth / 2, height - heightOffset, 3);                  // Middle
-    Utils.fillCircle(basketXPosition + basketWidth + 10, height - heightOffset, 3);                 // Right
-    Utils.fillCircle(appleX - appleSize * 1.5, appleY + appelSpeed * frameCount + appleSize, 3);    // Left
-    Utils.fillCircle(appleX, appleY + appelSpeed * frameCount + appleSize, 3);                      // Middle
-    Utils.fillCircle(appleX + appleSize * 1.5, appleY + appelSpeed * frameCount + appleSize, 3);    // Right
-
-	// LEFTS
-	let lefts = Utils.calculateDistance(appleHitKeyPos.leftX, appleHitKeyPos.y, basketHitKeyPos.leftX, basketHitKeyPos.y);
-
-	// MIDDLES
-	let middles = Utils.calculateDistance(appleHitKeyPos.middleX, appleHitKeyPos.y, basketHitKeyPos.middleX, basketHitKeyPos.y);
-
-	// RIGHTS
-	let rights = Utils.calculateDistance(appleHitKeyPos.leftX, appleHitKeyPos.y, basketHitKeyPos.leftX, basketHitKeyPos.y);
-
-	// TOTAL HIT WIDTH APPLE
-	let widthApple = Utils.calculateDistance(appleHitKeyPos.leftX, appleHitKeyPos.y, appleHitKeyPos.rightX, appleHitKeyPos.y);
-
-	// TOTAL HIT WIDTH BASKET
-	let widthBasket = Utils.calculateDistance(basketHitKeyPos.leftX, basketHitKeyPos.y, basketHitKeyPos.rightX, basketHitKeyPos.y);
- */
+function resetGame() {
+    lives = 3;
+    score = 0;
+    gameOver = false;
+    frameCount = 0;
+    basketXPosition = width / 2;
+    resetApple();
+}
